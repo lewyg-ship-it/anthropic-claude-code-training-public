@@ -1,4 +1,9 @@
-import { filterPayments, parseFilters, sortPayments } from "@/data/queries"
+import {
+  filterPayments,
+  parseFilters,
+  sortPayments,
+  validateFilterParams,
+} from "@/data/queries"
 import { exportFilename, parseExportColumns, toCsv } from "@/lib/csv"
 import { NextRequest, NextResponse } from "next/server"
 
@@ -22,6 +27,11 @@ export function GET(request: NextRequest) {
   const parsed = parseExportColumns(params.get("columns"))
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 })
+  }
+
+  const invalid = validateFilterParams(params)
+  if (invalid) {
+    return NextResponse.json({ error: invalid }, { status: 400 })
   }
 
   const filters = parseFilters(params)

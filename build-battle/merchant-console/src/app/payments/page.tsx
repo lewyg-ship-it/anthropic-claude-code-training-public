@@ -10,8 +10,13 @@ import {
 } from "@/components/Table"
 import { StatusBadge } from "@/components/ui/payments/StatusBadge"
 import { merchantById, merchants } from "@/data/merchants"
-import { queryPayments } from "@/data/queries"
-import { PaymentFilters, PaymentStatus } from "@/data/types"
+import {
+  filterPayments,
+  parseFilters,
+  queryPayments,
+  validateFilterParams,
+} from "@/data/queries"
+import { PaymentStatus } from "@/data/types"
 import { formatDate } from "@/lib/dates"
 import { formatMoney } from "@/lib/money"
 import Link from "next/link"
@@ -33,19 +38,17 @@ export default async function PaymentsPage({
   searchParams: Promise<Record<string, string | undefined>>
 }) {
   const params = await searchParams
-  const filters: PaymentFilters = {
-    status: (STATUSES.includes(params.status as PaymentStatus)
-      ? params.status
-      : "all") as PaymentFilters["status"],
-    merchantId: params.merchantId || undefined,
-    search: params.search || undefined,
-    page: Number(params.page ?? "1") || 1,
-  }
-
-  const { rows, total, page, pageCount } = queryPayments(filters)
   const query = new URLSearchParams(
     Object.entries(params).filter(([, v]) => Boolean(v)) as [string, string][],
   )
+  // Same validation and parser as the export route, so the table, the row
+  // count and the file agree.
+  const invalid = validateFilterParams(query)
+  const filters = parseFilters(query)
+
+  const { rows, total, page, pageCount } = invalid
+    ? { rows: [], total: 0, page: 1, pageCount: 1 }
+    : queryPayments(filters)
 
   const pageHref = (next: number) => {
     const q = new URLSearchParams(query)
@@ -65,11 +68,13 @@ export default async function PaymentsPage({
             search: filters.search ?? "",
           }}
         />
-        <ExportDialog
-          query={query.toString()}
-          filteredCount={total}
-          allCount={queryPayments({}).total}
-        />
+        {!invalid && (
+          <ExportDialog
+            query={query.toString()}
+            filteredCount={total}
+            allCount={filterPayments({}).length}
+          />
+        )}
       </div>
 
       <TableRoot className="border-t border-gray-200 dark:border-gray-800">
@@ -90,10 +95,10 @@ export default async function PaymentsPage({
               <TableRow>
                 <TableCell colSpan={7} className="py-16 text-center">
                   <p className="font-medium text-gray-900 dark:text-gray-50">
-                    No payments match these filters
+                    {invalid ? "These filters are not valid" : "No payments match these filters"}
                   </p>
                   <p className="mt-1 text-gray-500">
-                    Clear the search or pick a different status.
+                    {invalid ?? "Clear the search or pick a different status."}
                   </p>
                 </TableCell>
               </TableRow>
