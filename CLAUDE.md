@@ -30,6 +30,12 @@ Read the narrowest one that applies before you write code.
 - Never edit seed data to make a failing case disappear.
 - Nothing in this repository may resemble real payment data. Generated card numbers use the `4242` test BIN.
 
+## Release Standards
+
+- All changes need test evidence before merging: `npm test` output, or the manual check you ran, recorded in the PR.
+- No direct commits to `main`. Every change lands through a ticket branch and a pull request.
+- Every PR includes a one-line business impact summary: who it helps and how.
+
 ## Submissions
 
 Work is submitted as a pull request against this repository and scored automatically.

@@ -9,15 +9,18 @@ Northwind Payments is fictional. Every merchant, cardholder, amount, and card in
 ```bash
 npm install
 npm run dev
+npm test       # Vitest, plain Node (no jsdom), picks up src/**/*.test.ts only
+npm run lint   # next lint
 ```
 
-No database, no seed step, no Docker.
+No database, no seed step, no Docker. Import from `src/` with the `@/` alias, not relative paths.
 
 ## Data lives in memory
 
 Seed data is JSON, loaded into a store module at boot. Route handlers read and write that store.
 
 - Writes last for the life of the dev server and vanish on restart. That is expected.
+- The seed is fixed (`SEED` in `src/data/generate.ts`), so the same data and the same bugs reproduce every run.
 - Persistence is tracked separately as NWP-203. **Do not add a database, an ORM, or migrations.**
 - If you need more seed data, add it to the JSON. Never edit seed data to make a failing case disappear.
 
@@ -36,9 +39,9 @@ This file loads every session, so it stays short. Detail that only matters once 
 
 These four explain most of the code, and breaking them is how bugs get in here.
 
-1. **Money is integer minor units.** `$250.00` is `25000`. No floats, no strings with currency symbols. Format once, at the edge, next to its currency code.
+1. **Money is integer minor units.** `$250.00` is `25000`. No floats, no strings with currency symbols. Format once, at the edge, next to its currency code. Sort and compare amounts numerically on the minor units, never as strings.
 2. **Storage and bucketing are UTC.** Display converts to the merchant's timezone. Nothing else does.
-3. **One query builder.** Payment filtering goes through the builder behind `GET /api/payments`. A second implementation is a bug, not a shortcut.
+3. **One query builder.** Payment filtering goes through the builder behind `GET /api/payments`. A second implementation is a bug, not a shortcut. Pages parse filters with `parseFilters` too, so the table and the export agree.
 4. **Validate on the server.** Anything from the client — column names, currencies, limits, statuses — is checked against an allowlist before it reaches a query, a filename, or the store.
 
 ## Card rules
