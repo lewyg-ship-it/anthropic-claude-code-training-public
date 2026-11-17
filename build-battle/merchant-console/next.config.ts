@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
+  // The pre-push hook builds into its own folder so it never clobbers a running `next dev`.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   redirects: async () => {
     return [
       {
